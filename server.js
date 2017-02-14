@@ -10,6 +10,11 @@ io.on("connection", function(socket) {
 	
 });
 
+app.use("/", express.static(__dirname + "/public"));
+app.get("/", function (req, res) {
+	res.sendFile(__dirname + "/public/index.html");
+});
+
 http.listen(port, function () {
 	console.log('listening on *:' + port);
 });
