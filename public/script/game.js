@@ -56,7 +56,24 @@ function update() {
 		characterController();
 		
 		players[socket.id].player.rotation = game.physics.arcade.angleToPointer(players[socket.id].player);
+		socket.emit("player_rotation", players[socket.id].player.rotation);
 	}
+	setCollisions();
+}
+
+function bulletHitHandler(player, bullet) {
+    socket.emit("player_killed", player.id);
+    bullet.destroy();
+}
+
+function setCollisions() {
+    for (let x in players) {
+        for (let y in players) {
+            if (x != y) {
+                game.physics.arcade.collide(players[x].weapon.bullets, players[y].player, bulletHitHandler, null, this);
+            }
+        }
+    }
 }
 
 function sendPosition(character) {
