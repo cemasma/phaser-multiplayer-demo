@@ -71,6 +71,13 @@ io.on("connection", function(socket) {
 		//console.log(id + " identifed player has fired");
 		io.sockets.emit("player_fire_add", id);
 	});
+	
+	socket.on('player_killed', function (victimId) {
+		//console.log("player killed: " + data.victimId);
+		io.sockets.emit('clean_dead_player', victimId);
+		players[victimId].live = false;
+		//delete players[data.victimId];
+	});
 });
 
 app.use("/", express.static(__dirname + "/public"));

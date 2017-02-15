@@ -49,6 +49,15 @@ function create() {
     socket.on('player_fire_add', function (id) {
         players[id].weapon.fire();
     });
+	
+	socket.on('clean_dead_player', function (victimId) {
+        if (victimId == socket.id) {
+            live = false;
+        }
+        players[victimId].player.kill();
+        //players[victimId].weapon.kill();
+        //delete players[victimId];
+    });
 }
 
 function update() {
