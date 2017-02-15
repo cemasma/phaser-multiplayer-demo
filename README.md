@@ -8,7 +8,12 @@ First you need to clone it.
 ```shell
 git clone https://github.com/cemasma/phaser-multiplayer-demo.git
 ```
-After if your computer has node.js already you should run this command on the project root directory.
+If your computer has node.js already you should run this command on the project root directory.
+```shell
+npm install
+```
+
+When the modules are installed you can start it with this command.
 ```shell
 npm start
 ```
