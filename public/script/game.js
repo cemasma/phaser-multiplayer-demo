@@ -28,6 +28,27 @@ function create() {
             addPlayer(data.id, data.player.x, data.player.y);
         }
     });
+	
+	socket.on("player_position_update", function (data) {
+        data = JSON.parse(data);
+
+        players[data.id].player.x += data.x;
+        players[data.id].player.y += data.y;
+    });
+
+    socket.on("player_rotation_update", function (data) {
+        data = JSON.parse(data);
+        players[data.id].player.rotation = data.value;
+    });
+
+    socket.on('player_disconnect', function (id) {
+        players[id].player.kill();
+        //delete players[id];
+    });
+
+    socket.on('player_fire_add', function (id) {
+        players[id].weapon.fire();
+    });
 }
 
 function update() {
