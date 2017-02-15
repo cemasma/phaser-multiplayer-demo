@@ -13,5 +13,5 @@ After if your computer has node.js already you should run this command on the pr
 npm start
 ```
 
-For lastly now you can access the game on: http://localhost:3000
+For lastly you can access the game on: http://localhost:3000
 
