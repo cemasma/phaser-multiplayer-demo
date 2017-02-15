@@ -15,6 +15,62 @@ io.on("connection", function(socket) {
 		"width": 32, "height": 32,
 		"live": true
 	};
+	
+	io.sockets.emit('add_player', JSON.stringify({
+		"id": socket.id,
+		"player": players[socket.id]
+	}));
+	
+	socket.emit('add_players', JSON.stringify(players));
+	
+	socket.on('disconnect', function () {
+		console.log("an user disconnected " + socket.id);
+
+		delete players[socket.id];
+		io.sockets.emit('player_disconnect', socket.id);
+	});
+
+	socket.on('player_move', function (data) {
+		data = JSON.parse(data);
+
+		// default values
+		data.x = 0;
+		data.y = 0;
+
+		switch(data.character) {
+			case "W":
+				data.y = -5;
+				players[data.id].y -= 5;
+				break;
+			case "S":
+				data.y = 5;
+				players[data.id].y += 5;
+				break;
+			case "A":
+				data.x = -5;
+				players[data.id].x -= 5;
+				break;
+			case "D":
+				data.x = 5;
+				players[data.id].x += 5;
+				break;
+		}
+		
+		io.sockets.emit('player_position_update', JSON.stringify(data));
+	});
+
+	socket.on('player_rotation', function (data) {
+		io.sockets.emit('player_rotation_update', JSON.stringify({
+			"id": socket.id,
+			"value": data
+		}));
+		players[socket.id].rotation = data;
+	});
+
+	socket.on('shots_fired', function (id) {
+		//console.log(id + " identifed player has fired");
+		io.sockets.emit("player_fire_add", id);
+	});
 });
 
 app.use("/", express.static(__dirname + "/public"));
