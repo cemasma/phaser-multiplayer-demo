@@ -1,5 +1,5 @@
-var socket, players = {}, live;
-var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+let socket, players = {};
+game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
 function preload() {
     game.load.image("player", "img/player.png");
@@ -7,67 +7,70 @@ function preload() {
 }
 
 function create() {
-	socket = io.connect(window.location.host);
+    socket = io.connect(window.location.host);
     game.physics.startSystem(Phaser.Physics.ARCADE);
-	
-	socket.on("add_players", function (data) {
+
+    socket.on("add_players", function (data) {
         data = JSON.parse(data);
 
         for (let playerId in data) {
-            if (players[playerId] == null && data[playerId].live) {
-                addPlayer(playerId, data[playerId].x, data[playerId].y);
-            }
+            addPlayer(playerId, data[playerId].x, data[playerId].y);
         }
-        live = true;
     });
 
     socket.on("add_player", function (data) {
         data = JSON.parse(data);
 
-        if (data.player.live) {
+        if (data.id != socket.id) {
             addPlayer(data.id, data.player.x, data.player.y);
         }
     });
-	
-	socket.on("player_position_update", function (data) {
+
+    socket.on("player_update", function (data) {
         data = JSON.parse(data);
 
-        players[data.id].player.x += data.x;
-        players[data.id].player.y += data.y;
-    });
+        players[data.id].player.x = data.x;
+        players[data.id].player.y = data.y;
 
-    socket.on("player_rotation_update", function (data) {
-        data = JSON.parse(data);
-        players[data.id].player.rotation = data.value;
+        if (data.rotation != null) {
+            players[data.id].player.rotation = data.rotation;
+        }
+
+        if (data.shots_fired) {
+            players[data.id].weapon.fire();
+        }
     });
 
     socket.on('player_disconnect', function (id) {
         players[id].player.kill();
-        //delete players[id];
     });
 
-    socket.on('player_fire_add', function (id) {
-        players[id].weapon.fire();
-    });
-	
-	socket.on('clean_dead_player', function (victimId) {
+    socket.on('clean_dead_player', function (victimId) {
         if (victimId == socket.id) {
-            live = false;
+            players[socket.id].live = false;
         }
         players[victimId].player.kill();
-        //players[victimId].weapon.kill();
-        //delete players[victimId];
     });
 }
 
 function update() {
-    if(live) {
-		characterController();
-		
-		players[socket.id].player.rotation = game.physics.arcade.angleToPointer(players[socket.id].player);
-		socket.emit("player_rotation", players[socket.id].player.rotation);
-	}
-	setCollisions();
+    if (players[socket.id] != null && players[socket.id].live) {
+        characterController();
+    }
+    setCollisions();
+}
+
+function characterController() {
+    socket.emit("player_move", JSON.stringify({
+        "shots_fired": game.input.activePointer.leftButton.isDown,
+        "A": game.input.keyboard.isDown(Phaser.Keyboard.A),
+        "D": game.input.keyboard.isDown(Phaser.Keyboard.D),
+        "W": game.input.keyboard.isDown(Phaser.Keyboard.W),
+        "S": game.input.keyboard.isDown(Phaser.Keyboard.S),
+        "rotation":
+        (players[socket.id].player.rotation != game.physics.arcade.angleToPointer(players[socket.id].player)) ?
+            game.physics.arcade.angleToPointer(players[socket.id].player) : null
+    }));
 }
 
 function bulletHitHandler(player, bullet) {
@@ -85,37 +88,6 @@ function setCollisions() {
     }
 }
 
-function sendPosition(character) {
-    socket.emit("player_move", JSON.stringify(
-        {
-            "id": socket.id,
-            "character": character
-        }
-    ));
-}
-
-function characterController() {
-    if (game.input.activePointer.leftButton.isDown) {
-        socket.emit("shots_fired", socket.id);
-    }
-    if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-        //players[socket.id].player.x -= 5;
-        sendPosition("A");
-    }
-    if (game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-        //players[socket.id].player.x += 5;
-        sendPosition("D");
-    }
-    if (game.input.keyboard.isDown(Phaser.Keyboard.W)) {
-        //players[socket.id].player.y -= 5;
-        sendPosition("W");
-    }
-    if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-        //players[socket.id].player.y += 5;
-        sendPosition("S");
-    }
-}
-
 function addPlayer(playerId, x, y) {
     let player = game.add.sprite(x, y, "player");
     game.physics.enable(player, Phaser.Physics.ARCADE);
@@ -129,5 +101,5 @@ function addPlayer(playerId, x, y) {
 
     weapon.trackSprite(player, 0, 0, true);
     player.id = playerId;
-    players[playerId] = { player, weapon };
+    players[playerId] = { player, weapon, "live": true };
 }
